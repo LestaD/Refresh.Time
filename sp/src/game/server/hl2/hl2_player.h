@@ -14,6 +14,7 @@
 #include "hl2_playerlocaldata.h"
 #include "simtimer.h"
 #include "soundenvelope.h"
+#include "invitems.h"
 
 class CAI_Squad;
 class CPropCombineBall;
@@ -138,6 +139,15 @@ public:
 	float SuitPower_GetCurrentPercentage( void ) { return m_HL2Local.m_flSuitPower; }
 	
 	void SetFlashlightEnabled( bool bState );
+
+	
+	// Regeneration Health
+	void Health_Init(void);
+	void Health_Update(void);
+	bool Health_ShouldRegenerate(void);
+	void Health_Up(void);
+
+
 
 	// Apply a battery
 	bool ApplyBattery( float powerMultiplier = 1.0 );
@@ -295,6 +305,9 @@ protected:
 	virtual void		PlayUseDenySound();
 
 private:
+
+	float				m_flNextHealthUp;
+
 	bool				CommanderExecuteOne( CAI_BaseNPC *pNpc, const commandgoal_t &goal, CAI_BaseNPC **Allies, int numAllies );
 
 	void				OnSquadMemberKilled( inputdata_t &data );
@@ -315,6 +328,8 @@ private:
 
 protected:	// Jeep: Portal_Player needs access to this variable to overload PlayerUse for picking up objects through portals
 	bool				m_bPlayUseDenySound;		// Signaled by PlayerUse, but can be unset by HL2 ladder code...
+
+	// CNetworkArray(CInvItemHandle, m_hInventory, MAX_INVENTORY_ITEMS);  // Inventory
 
 private:
 

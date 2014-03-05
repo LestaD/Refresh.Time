@@ -395,12 +395,25 @@ CHL2_Player::CHL2_Player()
 
 	m_flArmorReductionTime = 0.0f;
 	m_iArmorReductionFrom = 0;
+
+	Health_Init();
 }
 
 //
 // SUIT POWER DEVICES
 //
-#define SUITPOWER_CHARGE_RATE	12.5											// 100 units in 8 seconds
+#define SUITPOWER_CHARGE_RATE	12.5	// 100 units in 8 seconds
+
+//
+// HEALTH REGENERATE
+// 
+#define HEALTH_REGENERATE_RATE_1 0.2f
+#define HEALTH_REGENERATE_RATE_2 0.3f
+#define HEALTH_REGENERATE_RATE_3 0.5f
+#define HEALTH_REGENERATE_RATE_4 1.5f
+#define HEALTH_REGENERATE_DELAY 1.5f
+
+
 
 #ifdef HL2MP
 	CSuitPowerDevice SuitDeviceSprint( bits_SUIT_DEVICE_SPRINT, 25.0f );				// 100 units in 4 seconds
@@ -596,6 +609,8 @@ void CHL2_Player::PreThink(void)
 		CheckSuitUpdate();
 		CheckSuitZoom();
 
+		Health_Update();
+
 		WaterMove();	
 		return;
 	}
@@ -705,6 +720,10 @@ void CHL2_Player::PreThink(void)
 	// Operate suit accessories and manage power consumption/charge
 	VPROF_SCOPE_BEGIN( "CHL2_Player::PreThink-SuitPower_Update" );
 	SuitPower_Update();
+	VPROF_SCOPE_END();
+
+	VPROF_SCOPE_BEGIN("CHL2_Player::PreThink-Health_Update");
+	Health_Update();
 	VPROF_SCOPE_END();
 
 	// checks if new client data (for HUD and view control) needs to be sent to the client
@@ -893,6 +912,9 @@ void CHL2_Player::PreThink(void)
 		}
 	}
 }
+
+
+
 
 void CHL2_Player::PostThink( void )
 {
@@ -1779,6 +1801,71 @@ void CHL2_Player::SetupVisibility( CBaseEntity *pViewEntity, unsigned char *pvs,
 	}
 }
 
+void HealthRegenCallback(IConVar *var, const char *pOldValue, float flOldValue);
+
+ConVar rt_regenerate_health("rt_regenerate_health", "0.3", NULL, "", true, 0.1f, true, 1.0f, HealthRegenCallback);
+
+void HealthRegenCallback(IConVar *var, const char *pOldValue, float flOldValue)
+{
+	Msg("Regen val ");
+	Msg(rt_regenerate_health.GetDefault());
+	Msg("\n");
+}
+
+// Health regeneration
+void CHL2_Player::Health_Init()
+{
+	m_flNextHealthUp = gpGlobals->curtime;
+}
+
+
+void CHL2_Player::Health_Update()
+{
+	if (Health_ShouldRegenerate())
+	{
+		Health_Up();
+	}
+}
+
+
+bool CHL2_Player::Health_ShouldRegenerate()
+{
+	// Is the health full
+	if (m_iHealth >= 100)
+		return false;
+
+	if (gpGlobals->curtime < m_flLastDamageTime + HEALTH_REGENERATE_DELAY)
+		return false;
+
+	return true;
+}
+
+
+void CHL2_Player::Health_Up()
+{
+	if (gpGlobals->curtime > m_flNextHealthUp)
+	{
+		TakeHealth(1, 0);
+
+		float nextUpTime = HEALTH_REGENERATE_RATE_1;
+
+		if ( m_iHealth >= 25 && m_iHealth < 50 )
+		{
+			nextUpTime = HEALTH_REGENERATE_RATE_2;
+		}
+		else if ( m_iHealth >= 50 && m_iHealth < 75 )
+		{
+			nextUpTime = HEALTH_REGENERATE_RATE_3;
+		}
+		else if ( m_iHealth >= 75 )
+		{
+			nextUpTime = HEALTH_REGENERATE_RATE_4;
+		}
+
+
+		m_flNextHealthUp = gpGlobals->curtime + nextUpTime;
+	}
+}
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
@@ -1978,7 +2065,7 @@ ConVar	sk_battery( "sk_battery","0" );
 
 bool CHL2_Player::ApplyBattery( float powerMultiplier )
 {
-	const float MAX_NORMAL_BATTERY = 100;
+	//const float MAX_NORMAL_BATTERY = 100;
 	if ((ArmorValue() < MAX_NORMAL_BATTERY) && IsSuitEquipped())
 	{
 		int pct;

@@ -13,6 +13,7 @@
 #include "ivieweffects.h"
 #include "shake.h"
 #include "eventlist.h"
+#include "items_parse.h"
 // NVNT haptic include for notification of world precache
 #include "haptics/haptic_utils.h"
 // memdbgon must be the last include file in a .cpp file!!!
@@ -147,6 +148,7 @@ short		g_sModelIndexBloodSpray;	// holds the sprite index for splattered blood
 void W_Precache(void)
 {
 	PrecacheFileWeaponInfoDatabase( filesystem, g_pGameRules->GetEncryptionKey() );
+	//PrecacheFileItemInfoDatabase(filesystem, g_pGameRules->GetEncryptionKey()); // Inventory
 
 	g_sModelIndexFireball = modelinfo->GetModelIndex ("sprites/zerogxplode.vmt");// fireball
 	g_sModelIndexWExplosion = modelinfo->GetModelIndex ("sprites/WXplo1.vmt");// underwater fireball
